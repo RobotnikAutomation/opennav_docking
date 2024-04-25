@@ -17,6 +17,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "opennav_docking/controller.hpp"
 #include "nav2_util/node_utils.hpp"
+#include "nav2_util/geometry_utils.hpp"
 
 namespace opennav_docking
 {
@@ -59,6 +60,42 @@ bool Controller::computeVelocityCommand(
 {
   cmd = control_law_->calculateRegularVelocity(pose, backward);
   return true;
+}
+
+nav_msgs::msg::Path Controller::simulateTrajectory(
+  const geometry_msgs::msg::PoseStamped & motion_target, const bool & backward)
+{
+  nav_msgs::msg::Path trajectory;
+
+  // First pose
+  geometry_msgs::msg::PoseStamped next_pose;
+  next_pose.header.frame_id = motion_target.header.frame_id;
+  next_pose.pose.orientation.w = 1.0;
+  trajectory.poses.push_back(next_pose);
+
+  double distance = std::numeric_limits<double>::max();
+  double resolution = 0.02;
+  double dt = 0.2;
+
+  // Set max iter to avoid infinite loop
+  unsigned int max_iter = 2 * sqrt(
+    motion_target.pose.position.x * motion_target.pose.position.x +
+    motion_target.pose.position.y * motion_target.pose.position.y) / resolution;
+
+  // Generate path
+  do{
+    // Apply velocities to calculate next pose
+    next_pose.pose = control_law_->calculateNextPose(
+      dt, motion_target.pose, next_pose.pose, backward);
+
+    // Add the pose to the trajectory for visualization
+    trajectory.poses.push_back(next_pose);
+
+    // Check if we reach the goal
+    distance = nav2_util::geometry_utils::euclidean_distance(motion_target.pose, next_pose.pose);
+  }while(distance > resolution && trajectory.poses.size() < max_iter);
+
+  return trajectory;
 }
 
 }  // namespace opennav_docking

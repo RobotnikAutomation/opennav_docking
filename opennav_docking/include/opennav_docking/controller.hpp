@@ -19,6 +19,7 @@
 
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "nav2_graceful_controller/smooth_control_law.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 
@@ -44,8 +45,19 @@ public:
    * @returns True if command is valid, false otherwise.
    */
   bool computeVelocityCommand(
-    const geometry_msgs::msg::Pose & pose, geometry_msgs::msg::Twist & cmd,
-    bool backward = false);
+    const geometry_msgs::msg::Pose & pose, geometry_msgs::msg::Twist & cmd, bool backward = false);
+
+  /**
+   * @brief Simulate trajectory calculating in every step the new velocity command based on
+   * a new curvature value and checking for collisions.
+   *
+   * @param motion_target Motion target point
+   * @param backward Flag to indicate if the robot is moving backward
+   * @return trajectory Simulated trajectory
+   */
+  nav_msgs::msg::Path simulateTrajectory(
+    const geometry_msgs::msg::PoseStamped & motion_target,
+    const bool & backward);
 
 protected:
   std::unique_ptr<nav2_graceful_controller::SmoothControlLaw> control_law_;
