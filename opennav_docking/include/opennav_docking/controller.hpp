@@ -56,11 +56,24 @@ public:
    * @return trajectory Simulated trajectory
    */
   nav_msgs::msg::Path simulateTrajectory(
-    const geometry_msgs::msg::PoseStamped & motion_target,
-    const bool & backward);
+    const geometry_msgs::msg::PoseStamped & motion_target, const bool & backward);
+
+  /**
+   * @brief Callback executed when a parameter change is detected
+   * @param event ParameterEvent message
+   */
+  rcl_interfaces::msg::SetParametersResult
+  dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
+
+  // Dynamic parameters handler
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr dyn_params_handler_;
+  std::mutex dynamic_params_lock_;
 
 protected:
   std::unique_ptr<nav2_graceful_controller::SmoothControlLaw> control_law_;
+
+  double k_phi_, k_delta_, beta_, lambda_;
+  double slowdown_radius_, v_linear_min_, v_linear_max_, v_angular_max_;
 };
 
 }  // namespace opennav_docking
